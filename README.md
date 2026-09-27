@@ -1,6 +1,12 @@
 # Ghost Eye
 Ghost Eye - Information Gathering Tool
 
+> **Fork notice:** This repository is a modified fork of the original
+> [BullsEye0/ghost_eye](https://github.com/BullsEye0/ghost_eye) project.
+> The original author and GPL-3.0 license are retained. This fork updates
+> the code to use Python's standard library without pip-based dependencies
+> and adds Python 3.14 compatibility improvements.
+
 **Ghost Eye** New Release. Ghost Eye is an Information Gathering, Footprinting, Scanner, and Recon Tool I made in Python 3. Since the last release of Ghost Eye, I've tweaked, removed, and added some new features. So that Ghost Eye would become more of a whole. For me, it remains a game of options so that together you get a complete overview of your target.
 ****
 Here you can read an article i wrote about Ghost Eye
@@ -48,17 +54,19 @@ Hi there, Shall we play a game..? 😃
 ****
 
 ## Install and run on Linux
- 
-You have to install Nmap and EtherApe too:
+
+Ghost Eye uses only Python's standard library. No Python packages, `pip`, or
+`requirements.txt` installation is needed.
   
 * On Arch Linux and its distros: 
 ```bash
 sudo pacman -S etherape nmap dnsutils gnome-terminal httpie mtr
 ```
   
-* On Debian and its distros (Kali Linux, Parrot Security OS): 
+* On Debian and its distros (Kali Linux, Parrot Security OS):
 ```bash
-sudo apt install etherape nmap dnsutils gnome-terminal httpie mtr
+sudo apt update
+sudo apt install python3 nmap dnsutils whois gnome-terminal httpie mtr etherape
 ```
 After installing Etherape sometimes a GNOME error can occur, for which you install: (This will solve the common error)
 ```bash
@@ -66,7 +74,7 @@ apt install libgnomeui-0:amd64
 ```
 ****
     
-## Installation Steps:
+## Installation Steps
 
 1. **Clone the repository:**
 ```bash
@@ -74,23 +82,26 @@ git clone https://github.com/BullsEye0/ghost_eye.git
 cd ghost_eye
 ```
 
-2. **Create a virtual environment (recommended):**
+2. **Check Python:**
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 --version
 ```
 
-3. **Install dependencies:**
-```bash
-pip3 install -r requirements.txt
-```
+Python 3.14 is recommended. If your distribution provides a separate
+`python3.14` package, install it with `sudo apt install python3.14` and use
+`python3.14` below.
+
+3. **Run Ghost Eye:**
 
 ****
 
-## How to use Ghost Eye
 ```bash
-python3 ghost_eye.py
+python3.14 ghost_eye.py
 ```
+
+The Python code itself has no third-party package dependencies, so do not run
+`pip install` or `pip3 install`. The menu features use the Linux programs
+installed with `apt` above.
 
 Have fun ..! 😃
 

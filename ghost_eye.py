@@ -38,40 +38,73 @@
 
 ########################################################################
 
-from bs4 import BeautifulSoup
-import cloudscraper as cfscrape
 from collections import deque
+from html.parser import HTMLParser
 import json
-import nmap
 import os
-from os import system
 import re
-import requests
-import requests.exceptions
-import requests as res
-from requests import get
+import subprocess
 import sys
 import time
 from time import gmtime, strftime
-from urllib.error import URLError
-from urllib.parse import urlsplit
-import urllib3
+from urllib.error import HTTPError, URLError
+from urllib.parse import urljoin, urlencode
 import urllib.request
-from urllib.request import urlopen
-import urllib.parse
-import webtech
+
+
+USER_AGENT = "GhostEye/3.14 (standard library)"
+
+
+class LinkParser(HTMLParser):
+    """Small HTML parser used instead of BeautifulSoup."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.links = []
+        self.title = ""
+        self._in_title = False
+
+    def handle_starttag(self, tag, attrs):
+        attributes = dict(attrs)
+        if tag.lower() == "a" and attributes.get("href"):
+            self.links.append(attributes["href"])
+        self._in_title = tag.lower() == "title"
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "title":
+            self._in_title = False
+
+    def handle_data(self, data):
+        if self._in_title:
+            self.title += data
+
+
+def fetch(url, timeout=10, opener=None):
+    """Fetch a URL using urllib and return text, bytes, and headers."""
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    client = opener or urllib.request
+    with client.urlopen(request, timeout=timeout) as response:
+        content = response.read()
+        charset = response.headers.get_content_charset() or "utf-8"
+        return content.decode(charset, errors="replace"), content, response.headers
+
+
+def parse_html(content):
+    parser = LinkParser()
+    parser.feed(content)
+    return parser
 
 
 def banner():
     print(""" \033[1;34m
              ('-. .-.               .-')    .-') _            ('-.                 ('-.
             ( OO )  /     Ghost    ( OO ). (  OO) )         _(  OO)      Eye     _(  OO)
-  ,----.    ,--. ,--. .-'),-----. (_)---\_)/     '._       (,------. ,--.   ,--.(,------.
- '  .-./-') |  | |  |( OO'  .-.  '/    _ | |'--...__)       |  .---'  \  `.'  /  |  .---'
- |  |_( O- )|   .|  |/   |  | |  |\  :` `. '--.  .--'       |  |    .-')     /)  |  |
- |  | .--, \|       |\_) |  |\|  | '..`''.)   |  |         (|  '--.(OO  \   /.  (|  '--.
-(|  | '. (_/|  .-.  |  \ |  | |  |.-._)   \   |  |          |  .--' |   /  /     |  .--'
- |  '--'  | |  | |  |   `'  '-'  '\       /   |  |          |  `---.`-./  /      |  `---.
+             ,----.    ,--. ,--. .-'),-----. (_)---\\_)/     '._       (,------. ,--.   ,--.(,------.
+ '  .-./-') |  | |  |( OO'  .-.  '/    _ | |'--...__)       |  .---'  \\  `.'  /  |  .---'
+ |  |_( O- )|   .|  |/   |  | |  |\\  :` `. '--.  .--'       |  |    .-')     /)  |  |
+ |  | .--, \\|       |\\_) |  |\\|  | '..`''.)   |  |         (|  '--.(OO  \\   /.  (|  '--.
+(|  | '. (_/|  .-.  |  \\ |  | |  |.-._)   \\   |  |          |  .--' |   /  /     |  .--'
+ |  '--'  | |  | |  |   `'  '-'  '\\       /   |  |          |  `---.`-./  /      |  `---.
   `------'  `--' `--'     `-----'  `-----'    `--' V2       `------'  `--'       `------'
             \033[1;m
         \033[34mGhost Eye - Information Gathering Tool \033[0m
@@ -153,14 +186,20 @@ def fun():
                 print("This will take a moment... Get some coffee 😃 )\n")
                 time.sleep(1.5)
 
-                scanner = nmap.PortScanner()
                 command = ("nmap -Pn " + target)
                 process = os.popen(command)
                 results = str(process.read())
                 logPath = "logs/nmap-" + strftime("%Y-%m-%d_%H:%M:%S", gmtime())
 
                 print(results + command + logPath)
-                print("\033[34mNmap Version: \033[0m", scanner.nmap_version())
+                try:
+                    version = subprocess.run(
+                        ["nmap", "--version"], capture_output=True,
+                        text=True, check=False,
+                    ).stdout.splitlines()[0]
+                except (FileNotFoundError, IndexError):
+                    version = "nmap is not installed"
+                print("\033[34mNmap Version: \033[0m", version)
 
             except KeyboardInterrupt:
                     print("\n")
@@ -190,8 +229,7 @@ def fun():
             print("\033[1;34m[~] Testing Clickjacking Test: \033[1;m" + target)
             time.sleep(2)
             try:
-                resp = requests.get(target)
-                headers = resp.headers
+                _, _, headers = fetch(target)
                 print("\nHeader set are: \n")
                 for item, xfr in headers.items():
                     print("\033[1;34m" + item + ":" + xfr + "\033[1;m")
@@ -218,7 +256,7 @@ def fun():
                 robot = target + "/robots.txt"
 
                 try:
-                    bots = urlopen(robot).read().decode("utf-8")
+                    bots, _, _ = fetch(robot)
                     print("\033[34m" + (bots) + "\033[1;m")
                 except URLError:
                     print("\033[1;31m[-] Can\'t access to {page}!\033[1;m".format(page=robot))
@@ -234,22 +272,22 @@ def fun():
             print("[+] Cloudflare cookie scraper ")
             time.sleep(1.5)
 
-            sess = cfscrape.create_scraper()
             try:
-            	print("[+] Target: " + target)
-            	request = "GET / HTTP/1.1\r\n"
-            	cookie_value, user_agent = cfscrape.get_cookie_string(target)
-            	request += "Cookie: %s\r\nUser_Agent: %s\r\n" % (cookie_value, user_agent)
-            	data = sess.get(target)
-            	out = BeautifulSoup(data.content,'html.parser')
-            	print("[+] Print Cookie\n")
-            	print(request)
-            	os.system('tput setaf 10')
-            	print("\n[+] Scraper ")
-            	print(out)
+                print("[+] Target: " + target)
+                cookie_jar = urllib.request.HTTPCookieProcessor()
+                opener = urllib.request.build_opener(cookie_jar)
+                text, _, _ = fetch(target, opener=opener)
+                cookies = "; ".join(
+                    f"{cookie.name}={cookie.value}"
+                    for cookie in cookie_jar.cookiejar
+                )
+                print("[+] Print Cookie\n")
+                print(f"Cookie: {cookies}\r\nUser-Agent: {USER_AGENT}")
+                print("\n[+] Scraper\n")
+                print(text)
 
-            except ValueError:
-            	print('[X] Unable to find Cloudflare cookies. This website does not have Cloudflare IUAM enabled.')
+            except (HTTPError, URLError) as ex:
+                print(f"[X] Unable to fetch the page: {ex}")
 
         elif choice == ("9"):
             try:
@@ -266,20 +304,15 @@ def fun():
                     while len(deq):
                         url = deq.popleft()
                         pro.add(url)
-                        parts = urlsplit(url)
-                        base = "{0.scheme}://{0.netloc}".format(parts)
-
                         print("[+] Crawling URL " + "\033[34m" + url + "\033[0m")
                         try:
-                            response = requests.get(url)
-                        except (requests.exceptions.MissingSchema, requests.exceptions.ConnectionError):
+                            response, _, _ = fetch(url)
+                        except (ValueError, HTTPError, URLError):
                             continue
 
-                        soup = BeautifulSoup(response.text, "lxml")
-                        for anchor in soup.find_all("a"):
-                            link = anchor.attrs["href"] if "href" in anchor.attrs else ''
-                            if link.startswith("/"):
-                                link = base + link
+                        soup = parse_html(response)
+                        for link in soup.links:
+                            link = urljoin(url, link)
                             if not link in deq and not link in pro:
                                 deq.append(link)
                             continue
@@ -297,8 +330,7 @@ def fun():
             try:
                 target = input("\033[1;91m[+] Enter Domain or IP Address: \033[1;m").lower()
                 url = ("http://ip-api.com/json/")
-                response = urllib.request.urlopen(url + target)
-                data = response.read()
+                _, data, _ = fetch(url + target)
                 jso = json.loads(data)
                 os.system("reset")
                 print("\033[34m[~] Searching IP Location Finder: \033[0m".format(url) + target)
@@ -327,10 +359,24 @@ def fun():
                 os.system("reset")
                 print("\033[34m[~] Detecting CMS with Identified Technologies and Custom Headers from target url: \033[0m")
                 time.sleep(5)
-                command = ("mtr " + "-4 -rwc 1 " + target)
-                obj = webtech.WebTech()
-                results = obj.start_from_url(target, timeout=1)
-                sys.stdout.write(results)
+                content, _, headers = fetch(target, timeout=10)
+                technologies = []
+                server = headers.get("Server")
+                powered_by = headers.get("X-Powered-By")
+                if server:
+                    technologies.append("Server: " + server)
+                if powered_by:
+                    technologies.append("X-Powered-By: " + powered_by)
+                signatures = {
+                    "WordPress": ("/wp-content/", "wp-includes"),
+                    "Joomla": ("/media/jui/", "joomla"),
+                    "Drupal": ("drupal-settings-json", "sites/default/files"),
+                }
+                lower_content = content.lower()
+                for name, markers in signatures.items():
+                    if any(marker.lower() in lower_content for marker in markers):
+                        technologies.append(name)
+                sys.stdout.write("\n".join(technologies) or "No common CMS detected.")
 
             except Exception:
                 pass
@@ -358,20 +404,20 @@ def fun():
             time.sleep(5)
             print("[+] Target: " + target)
             if not (target.startswith("http://") or target.startswith("https://")):
-            	target = "http://" + target
+                target = "http://" + target
             try:
-            	content = get(target).text
-            	regex_t = re.compile(r"<title>(.*?)<\/title>")
-            	tit = re.findall(regex_t, content)
+                content, _, _ = fetch(target)
+                regex_t = re.compile(r"<title>(.*?)</title>", re.IGNORECASE | re.DOTALL)
+                tit = re.findall(regex_t, content)
 
-            	regex_l = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-            	link = re.findall(regex_l, content)
+                regex_l = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+                link = re.findall(regex_l, content)
 
-            	robots = get(target + "/robots.txt").text
+                robots, _, _ = fetch(target + "/robots.txt")
 
-            	print("[+] Title: "+ ''.join(tit) + "\n")
-            	print("[+] Extract links: \n" + '\n'.join(link) + "\n")
-            	print("[+] Robots.txt: \n" + robots)
+                print("[+] Title: " + "".join(tit) + "\n")
+                print("[+] Extract links: \n" + "\n".join(link) + "\n")
+                print("[+] Robots.txt: \n" + robots)
 
             except KeyError:
              	pass
@@ -383,14 +429,19 @@ def fun():
             time.sleep(1.5)
             print("[+] Target: " + target)
             try:
-            	headers = {
-            	'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36', }
-            	results = requests.get('https://api.certspotter.com/v1/issuances?domain='+target+'&expand=dns_names&expand=issuer&expand=cert | jq ".[].dns_names[]" | sed "s/\"//g" | sed "s/\*\.//g" | sort -u | grep '+target,headers=headers)
-            	results = results.text.split('\n')
-            	print(*results, sep = "\n")
+                query = urlencode({"domain": target, "expand": "dns_names"})
+                content, _, _ = fetch("https://api.certspotter.com/v1/issuances?" + query)
+                issuances = json.loads(content)
+                names = sorted({
+                    name.lstrip("*.")
+                    for issuance in issuances
+                    for name in issuance.get("dns_names", [])
+                    if target in name
+                })
+                print(*names, sep="\n")
 
-            except KeyError:
-             	pass
+            except (KeyError, HTTPError, URLError, json.JSONDecodeError) as ex:
+                print(f"[-] Certificate lookup failed: {ex}")
 
         elif choice == ("15"):
             time.sleep(1)

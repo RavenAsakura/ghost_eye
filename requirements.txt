@@ -1,6 +1,0 @@
-beautifulsoup4
-cloudscraper
-python-nmap
-requests
-urllib3
-webtech
