@@ -106,10 +106,11 @@ def banner():
  |  '--'  | |  | |  |   `'  '-'  '\\       /   |  |          |  `---.`-./  /      |  `---.
   `------'  `--' `--'     `-----'  `-----'    `--' V2       `------'  `--'       `------'
             \033[1;m
-        \033[34mGhost Eye - Information Gathering Tool \033[0m
-        \033[34mAuthor: Jolanda de Koff aka Bulls Eye \033[0m
-        \033[34mGithub:  https://github.com/BullsEye0 \033[0m
-        \033[34mWebsite: https://hackingpassion.com \033[0m
+        \033[34mGhost Eye - Information Gathering Tool (Fork) \033[0m
+        \033[34mMaintainer: Angel Peralta \033[0m
+        \033[34mRepository: https://github.com/RavenAsakura/ghost_eye \033[0m
+        \033[34mOriginal author: Jolanda de Koff aka Bulls Eye \033[0m
+        \033[34mOriginal project: https://github.com/BullsEye0/ghost_eye \033[0m
 
               Hi there, Shall we play a game..? 😃 """)
 
