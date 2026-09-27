@@ -18,6 +18,8 @@ installation through `pip`, `pip3`, or `pipx`.
   - Replaced pip-based setup instructions with `apt` installation instructions.
   - Documented the fork, original project, license, system tools, and runtime
     instructions.
+  - Removed original-project sponsorship, donation, payment, and course
+    promotions while retaining author attribution.
 - **`requirements.txt`**
   - Removed because the project no longer has third-party Python dependencies.
 - **`CHANGELOG.md`**

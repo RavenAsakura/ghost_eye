@@ -107,8 +107,9 @@ Have fun ..! 😃
 
 ****
 
-# Contact to coder
-Social Networks - Connect
+# Original project author
+The following links are retained for attribution to the original Ghost Eye
+author, **Jolanda de Koff / BullsEye0**.
 
 * Website [HackingPassion.com](https://hackingpassion.com)
 
@@ -126,34 +127,3 @@ Social Networks - Connect
 
 
 ***
-
-## 💻 Support this project
-
-If you find this tool useful, consider supporting my work:  
-[❤️ Sponsor BullsEye](https://github.com/sponsors/BullsEye0)
-
-Get the full hands-on course:  
-**[Ethical Hacking Complete Course – Zero to Expert](https://www.udemy.com/course/ethical-hacking-complete-course-zero-to-expert/?couponCode=SEPTEMBER)**
-
-(supports me directly as your instructor!)
-
-Professional penetration testing. Zero to Expert.  
-✅ Kali Linux + Parrot OS  
-✅ Real-world hacking scenarios  
-✅ All major tools & techniques  
-✅ Beginner-friendly  
-
-HACKING IS NOT A HOBBY, BUT A WAY OF LIFE 🎯
-
-***
-
-## Donate
-
-I have developed Ghost Eye because I am passionate about this. 
-Donations are one of the many ways to support what I do.
-
-[Donate](https://hackingpassion.com/donate/)
-
-BAT: Use [Brave](https://brave.com/bul891) and donate on any of my web pages/profiles
-
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=R96YN2PUS8V8W)
